@@ -8,6 +8,13 @@ dependencies = [
     "imageio>=2.37.0",
     "ipython>=9.0.1",
     "matplotlib>=3.10.1",
+    "pandas>=2.2.3",
     "rich>=13.9.4",
+    "scikit-learn>=1.6.1",
     "tensorflow>=2.18.0",
 ]
+
+[tool.pyright]
+include = ["src"]
+venvPath = ".venv"
+pythonPlatform = "Linux"
