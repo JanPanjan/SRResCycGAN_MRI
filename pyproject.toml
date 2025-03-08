@@ -1,0 +1,13 @@
+[project]
+name = "gan-osuprproject"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "imageio>=2.37.0",
+    "ipython>=9.0.1",
+    "matplotlib>=3.10.1",
+    "rich>=13.9.4",
+    "tensorflow>=2.18.0",
+]
