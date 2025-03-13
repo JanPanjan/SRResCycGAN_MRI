@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "imageio>=2.37.0",
+    "ipykernel>=6.29.5",
     "ipython>=9.0.1",
     "matplotlib>=3.10.1",
     "pandas>=2.2.3",
@@ -14,7 +15,15 @@ dependencies = [
     "tensorflow>=2.18.0",
 ]
 
-[tool.pyright]
-include = ["src"]
-venvPath = ".venv"
-pythonPlatform = "Linux"
+[tool.ruff]
+line-length = 90
+extend-select = ["D"]
+target-version = "py311"
+fix = true
+
+[tool.ruff.format]
+docstring-code-line-length = 90
+
+[tool.ruff.lint.isort]
+length-sort = true
+lines-after-imports = 2

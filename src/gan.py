@@ -2,7 +2,7 @@
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
-from tensorflow.keras import layers
+from keras import layers, datasets, Sequential
 import math
 
 # for GIFs
@@ -18,7 +18,10 @@ from IPython import display
 
 # --------------------------------------- hyperparams ------------------------------------------------
 
-BUFFER_SIZE = 60000 # unused for now, since i will set a seed to make debugging and optimizing easier
+# Buffer size is primarily used for random sampling using tf.data.Dataset.shuffle. Unused for now, 
+# since i will set a seed to make debugging and optimizing easier
+BUFFER_SIZE = 60000
+tf.random.set_seed(420)
 BATCH_SIZE = 128
 NOISE_DIM = 100
 FEATURE_MAP_SIZE = 7
@@ -27,12 +30,11 @@ SPATIAL_TENSOR = (FEATURE_MAP_SIZE, FEATURE_MAP_SIZE, CHANNELS)
 FILTERS = (CHANNELS, 64, 1)
 IMGS_TO_GEN = 4
 EPOCHS = 10
-tf.random.set_seed(420)
 
 # --------------------------------------- data -------------------------------------------------------
 
 # load the data from tensorflow
-(train_imgs, train_lbls), (test_imgs, test_lbls) = tf.keras.datasets.mnist.load_data()
+(train_imgs, train_lbls), (test_imgs, test_lbls) = datasets.mnist.load_data()
 
 # reshape img tensor into (n_instances, px width, px height, channels)
 # channels are the number of color channels in the image. this could be 1 for grayscale or 3 for RGB
@@ -58,32 +60,33 @@ train_df = tf.data.Dataset.from_tensor_slices(train_imgs)
 
 def build_generator():
     """
-    Start with a Dense layer that takes an input of 100 random values (noise) and transforms it into a
-    vector of size 7*7*256=12544.
+    Start with a Dense layer that takes an input of 100 random values (noise) and transforms
+    it into a vector of size 7*7*256=12544.
 
-    BatchNormalization helps stabilize training by normalizing the activations of the layer before it.
+    BatchNormalization helps stabilize training by normalizing the activations of the layer
+    before it.
 
-    For hidden layers, LeakyRelu is better than relu, since it avoids "dying ReLU" problem and provides better
-    gradient flow. Output layer should have tanh activation function, since it our values are normalized to be
-    between -1 and 1, while sigmoid outputs values between 0 and 1.
+    For hidden layers, LeakyRelu is better than relu, since it avoids "dying ReLU" problem and
+    provides better gradient flow. Output layer should have tanh activation function, since it
+    our values are normalized to be between -1 and 1, while sigmoid outputs values between 0 and 1.
 
-    Reshape transforms 7*7*1=49-element vector into a 7x7x1 tensor, that can be interpreted as a 7x7px image
-    with 1 channel (one feature map). It converts the vector representation into a spatial representation that
-    can then be processed by convolutional layers.
+    Reshape transforms 7*7*1=49-element vector into a 7x7x1 tensor, that can be interpreted as a
+    7x7px image with 1 channel (one feature map). It converts the vector representation into a spatial
+    representation that can then be processed by convolutional layers.
 
-    Core of our GAN network: Conv2DTranspose does upsampling (it increases the spatial dimensions). It inserts
-    values into the input and performs a convolution. It adds padding and then applies a standard convolution
-    operation to this expanded output. The kernel weigths are learned during training.
+    Core of our GAN network: Conv2DTranspose does upsampling (it increases the spatial dimensions).
+    It inserts values into the input and performs a convolution. It adds padding and then applies a
+    standard convolution operation to this expanded output. The kernel weigths are learned during training.
     """
 
-    model = tf.keras.Sequential()
+    model = Sequential()
     model.add(layers.Input(shape=(100,)))
 
     model.add(layers.Dense(math.prod(SPATIAL_TENSOR), use_bias=False))
     model.add(layers.BatchNormalization())
     model.add(layers.LeakyReLU())
 
-    model.add(layers.Reshape(SPATIAL_TENSOR)
+    model.add(layers.Reshape(SPATIAL_TENSOR))
 
     model.add(layers.Conv2DTranspose(FILTERS[0], (5, 5), strides=(1, 1), padding="same", use_bias=False))
     model.add(layers.BatchNormalization())
@@ -102,7 +105,7 @@ def build_generator():
 poglej si kako je discriminator izgrajen
 """
 def build_discriminator():
-    model = tf.keras.Sequential()
+    model = Sequential()
 
     model.add(layers.Conv2D(64, (5, 5), strides=(2, 2), padding='same', input_shape=[28, 28, 1]))
     model.add(layers.LeakyReLU())
