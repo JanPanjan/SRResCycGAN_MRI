@@ -1,0 +1,22 @@
+--feature maps == channels
+better to have many channels
+
+--convolutional layers 
+combine input tensors with kernel tensors (and a scalar bias) to produce output tensor
+
+--padding
+using cross-correlation with a convolutional kernel (K) reduces size of image (X) to
+(Xw - Kw + 1, Xh - Kh + 1). Only a number of convolutions can then be applied. Padding 
+solves this problem
+
+--strides
+when we want to move filter more than 1px at a time. Can define different values for horizontal
+and vertical traversal. Prevents learning redundant features and helps with downsampling greatly.
+Bigger strides, quicker traversal over picture, but captures less detail. (bigger strides for MRI?)
+
+--filters
+--pooling
+--discriminator conv2d layers
+--kaj vrne klic `model(nekinput)`
+--model losses
+--training loops
