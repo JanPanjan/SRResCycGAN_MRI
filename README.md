@@ -1,2 +1,1 @@
-# Generative adversarial neural network
-
+Tu je moj ves clusterfuck od raziskovanja za projekt, ki je v drugem repositoriju: [SRResCycGAN_MRI]()

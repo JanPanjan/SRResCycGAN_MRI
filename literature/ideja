@@ -1,0 +1,3 @@
+najprej moram definirat strukturo SRResCycGAN
+nato moram sprogramirat to s tensorflow
+ker bo veliko kode bo verjetno vredu da naredim pip package (če bo čas)

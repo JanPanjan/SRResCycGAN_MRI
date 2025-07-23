@@ -1,0 +1,9 @@
+srrescycgan-paper:
+  type: article
+  title: "Deep Cyclic Generative Adversarial Residual Convolutional Networks for Real Image Super-Resolution"
+  date: 2020-09-07
+  author:
+    - Muhhamad Umer, Rao
+    - Micheloni, Christian
+  serial:
+    doi: "https://doi.org/10.48550/arXiv.2009.03693"

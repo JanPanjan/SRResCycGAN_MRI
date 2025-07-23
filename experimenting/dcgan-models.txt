@@ -1,0 +1,28 @@
+generator
+    dense
+    bn
+    lrelu
+    reshape
+
+    conv2dtranspose
+    bn
+    lrelu
+
+    conv2dtranspose
+    bn
+    lrelu
+
+    conv2dtranspose
+    tanh
+
+discriminator
+    conv2d
+    lrelu
+    dropout
+
+    conv2d
+    lrelu
+    dropout
+
+    flatten
+    dense

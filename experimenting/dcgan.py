@@ -1,18 +1,19 @@
+# DCGAN (https://www.tensorflow.org/tutorials/generative/dcgan)
 import tensorflow as tf
+from keras import layers, datasets, Sequential, losses, optimizers
 import glob
 import imageio
 import matplotlib.pyplot as plt
 import os
 import time
 
-from tensorflow.keras import layers
 from IPython import display
 
 # ---- hyperparameters --------------------------------------------------------
 
 BUFFER_SIZE = 60000
 BATCH_SIZE = 256
-EPOCHS = 2
+EPOCHS = 1
 NOISE_DIM = 100
 NUM_EXAMPLES_TO_GEN = 16
 SEED = tf.random.normal([NUM_EXAMPLES_TO_GEN, NOISE_DIM])
@@ -24,7 +25,7 @@ i = 1
 print(f"[{i}] Downloading data")
 i += 1
 
-(train_images, train_labels), (_, _) = tf.keras.datasets.mnist.load_data()
+(train_images, train_labels), (_, _) = datasets.mnist.load_data()
 train_images = train_images.reshape(
     train_images.shape[0], 28, 28, 1).astype('float32')
 
@@ -39,7 +40,7 @@ i += 1
 
 
 def make_generator_model():
-    model = tf.keras.Sequential()
+    model = Sequential()
     model.add(layers.Dense(7 * 7 * 256, use_bias=False, input_shape=(100,)))
     model.add(layers.BatchNormalization())
     model.add(layers.LeakyReLU())
@@ -68,7 +69,7 @@ def make_generator_model():
 
 
 def make_discriminator_model():
-    model = tf.keras.Sequential()
+    model = Sequential()
     model.add(layers.Conv2D(64, (5, 5), strides=(2, 2), padding='same',
                             input_shape=[28, 28, 1]))
     model.add(layers.LeakyReLU())
@@ -84,7 +85,7 @@ def make_discriminator_model():
     return model
 
 
-cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+cross_entropy = losses.BinaryCrossentropy(from_logits=True)
 
 
 def discriminator_loss(real_output, fake_output):
@@ -101,8 +102,8 @@ def generator_loss(fake_output):
 generator = make_generator_model()
 discriminator = make_discriminator_model()
 
-generator_optimizer = tf.keras.optimizers.Adam(1e-4)
-discriminator_optimizer = tf.keras.optimizers.Adam(1e-4)
+generator_optimizer = optimizers.Adam(1e-4)
+discriminator_optimizer = optimizers.Adam(1e-4)
 
 checkpoint_dir = './training_checkpoints'
 checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
