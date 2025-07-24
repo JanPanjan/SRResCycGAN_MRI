@@ -14,6 +14,7 @@ reusable component in your project.
 import keras
 import numpy as np
 
+
 def build_vgg_extractor(layer_names):
     """
     Creates a Keras model that extracts features from the
@@ -46,11 +47,13 @@ def build_vgg_extractor(layer_names):
 
     # 4. Create the new feature extractor model
     # This model has the same input as VGG but outputs the intermediate activations.
-    model = keras.Model(inputs=vgg.input, outputs=outputs, name='vgg_feature_extractor')
+    model = keras.Model(inputs=vgg.input, outputs=outputs,
+                        name='vgg_feature_extractor')
 
     return model
 
 # --- Example Usage ---
+
 
 # The layer typically used for perceptual loss in recent papers is 'block5_conv4'.
 # Let's pick that one.
@@ -65,7 +68,8 @@ keras.applications.VGG19().summary()
 
 # Create a dummy "fake HR" image to test (Batch, Height, Width, Channels)
 # Note: VGG19 expects input pixels in the range [0, 255]
-dummy_image = np.random.randint(0, 255, size=(1, 256, 256, 3)).astype('float32')
+dummy_image = np.random.randint(
+    0, 255, size=(1, 256, 256, 3)).astype('float32')
 dummy_image.shape
 
 # Pre-process the image for VGG
@@ -76,7 +80,8 @@ preprocessed_image = keras.applications.vgg19.preprocess_input(dummy_image)
 features = feature_extractor(preprocessed_image)
 
 print(f"Input image shape: {dummy_image.shape}")
-print(f"Extracted features from '{CONTENT_LAYER}' have shape: {features.shape}")
+print(f"Extracted features from '{
+      CONTENT_LAYER}' have shape: {features.shape}")
 
 """
 How to Use It in Your Loss Function
@@ -87,6 +92,7 @@ Now, you can use this feature_extractor model to define your perceptual loss.
 # Assume 'feature_extractor' is the model we created above.
 # Use Mean Squared Error for the perceptual loss, as it's common.
 mse = keras.losses.MeanSquaredError()
+
 
 def perceptual_loss(real_hr, fake_hr):
     """
@@ -103,10 +109,11 @@ def perceptual_loss(real_hr, fake_hr):
     # Calculate the L2 distance (MSE) between the feature maps
     return mse(real_features, fake_features)
 
+
 # --- Example Usage ---
 # Create two dummy images
-real_image = np.random.randint(0, 255, size=(1, 256, 256, 3 )).astype('float32')
-fake_image = np.random.randint(0, 255, size=(1, 256, 256, 3 )).astype('float32')
+real_image = np.random.randint(0, 255, size=(1, 256, 256, 3)).astype('float32')
+fake_image = np.random.randint(0, 255, size=(1, 256, 256, 3)).astype('float32')
 
 # Calculate the loss
 loss = perceptual_loss(real_image, fake_image)
