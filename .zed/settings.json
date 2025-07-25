@@ -3,7 +3,7 @@
     "tinymist": {
       "settings": {
         "exportPdf": "onSave",
-        "outputPath": "$root/literature/report/$name"
+        "outputPath": "$root/notes/report/$name"
       }
     }
   }

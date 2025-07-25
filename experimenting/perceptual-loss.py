@@ -52,8 +52,8 @@ def build_vgg_extractor(layer_names):
 
     return model
 
-# --- Example Usage ---
 
+# --- Example Usage ---
 
 # The layer typically used for perceptual loss in recent papers is 'block5_conv4'.
 # Let's pick that one.

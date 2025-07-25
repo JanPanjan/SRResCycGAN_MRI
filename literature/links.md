@@ -1,7 +1,0 @@
-- [Project GitHub repo](https://github.com/JanPanjan/GAN-osuprProject.git)
-- [FastMRI](https://github.com/facebookresearch/fastMRI)
-- [FastMRI data processing examples](https://www.kaggle.com/code/osmanf/fastmri-knee-demo)
-- [CycleGAN](https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix?tab=readme-ov-file)
-- [Tensorflow implementation](https://github.com/leehomyc/cyclegan-1/blob/master/main.py#L9)
-- [Another tensorflow example](https://github.com/leftthomas/SRGAN/blob/master/model.py)
-- [Click library](https://click.palletsprojects.com/en/stable/)
