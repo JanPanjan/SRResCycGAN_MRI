@@ -11,7 +11,6 @@ sample_path = os.path.join(train_path, "file1000001.h5")
 
 # single h5 file that acts as a python dict
 sample = h5py.File(sample_path)
-
 dict(sample.attrs)
 list(sample.keys())
 
