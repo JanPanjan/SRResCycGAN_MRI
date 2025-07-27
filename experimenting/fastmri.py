@@ -22,9 +22,10 @@ kspace.shape
 kspace.dtype
 
 sample_slice_kspace = kspace[slice]
-sample_slice_kspace = np.log(np.abs(sample_slice_kspace) + 1e-9)  # complex -> float
+sample_slice_kspace = np.log(np.abs(sample_slice_kspace) + 1e-9)
 plt.title(f"k-space slice {slice}")
 plt.imshow(sample_slice_kspace)
+plt.show()
 
 # reconstructed image
 rss: h5py.Dataset = sample.get("reconstruction_rss")
@@ -34,10 +35,12 @@ rss.dtype
 sample_slice_rss = rss[slice]
 plt.title(f"Reconstructed slice {slice}")
 plt.imshow(sample_slice_rss, cmap="gray")
+plt.show()
 
-esc: h5py.Dataset= sample.get("reconstruction_esc")
+esc: h5py.Dataset = sample.get("reconstruction_esc")
 esc.shape
 esc.dtype
 
 sample_slice_esc = esc[slice]
 plt.imshow(sample_slice_esc, cmap="gray")
+plt.show()
