@@ -1,7 +1,7 @@
 from src.utils import HR_SHAPE
 from tensorflow import image, reduce_mean, abs
 from keras import Loss, Model
-from keras.losses import MeanSquaredError
+from keras.losses import MeanSquaredError, BinaryCrossentropy, MeanAbsoluteError
 from keras.applications import VGG19
 from keras.applications.vgg19 import preprocess_input
 
@@ -50,3 +50,14 @@ class PerceptualLoss(Loss):
         true_feat = self.vgg_model(true_preproc, training=False)
         pred_feat = self.vgg_model(pred_preproc, training=False)
         return self.L2(true_feat, pred_feat)
+
+
+# -------------------------------------------------------------------------------------
+
+losses_dict = {
+    "perceptual": PerceptualLoss(),
+    "adversarial": BinaryCrossentropy(from_logits=True),
+    "total_variation": total_variation,
+    "content": MeanAbsoluteError(),
+    "cyclic": MeanAbsoluteError(),
+}

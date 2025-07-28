@@ -108,7 +108,9 @@
 
 ### Total loss
 
-- loss D = loss D_HR + loss D_LR
+- total_loss_D =
+  loss D_HR +
+  loss D_LR
 
 - total_loss_G =
   perceptual_loss +
