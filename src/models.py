@@ -1,21 +1,20 @@
 from keras import Model, layers
+from .utils import LR_SHAPE, HR_SHAPE
 
 
-def Generator_HR(input_shape=(80, 80, 3)):
+def Generator_HR(input_shape=LR_SHAPE):
     """ Generator za HR (high resolution) slike.
 
     Deluje na principu "upscale -> refine". Sprejme sliko nizke ločljivosti in
     vrne izboljšano sliko visok ločljivosti. Arhitektura temelji na članku o SRResCGAN.
     Ima 3 glavne dele:
 
-    1. Encoder - poveča resolucijo vhodne slike in ustvari feature map s 64 kanali
-    2. ResidualNet - predela feature map od encoderja
-    3. Decoder - na podalagi izhoda ResNet-a ustvari proximal map (zemljevid napak)
+    1. Encoder - upsampling vhodne slike in ekstrakcija značilnosti
+    2. ResidualNet - predela zemljevid značilnosti (feature map) od encoderja
+    3. Decoder - na podalagi izhoda ResNet-a ustvari zemljevid napak (proximal map)
 
-    `Substract` na koncu izloči te zaznane napake iz povečane slike.
-
-    ResNet je sestavljen iz 5 blokov. Na koncu vsakega bloka se združijo vrednosti med vhodnimi in izhodnimi podatki
-    (od trenutnega bloka) preko skip povezave. Ta izhod služi kot vhod v naslednji blok.
+    `Subtract` sloj zmanjša prisotnost šuma in artefaktov upsampled slike s pomočjo
+    zemljevida napak. Zadnji `Conv2D` sloj poskrbi, da je izhod slika s tremi kanali.
 
     Args:
         input_shape: dimenzija LR slike (width, height, channels)
@@ -33,17 +32,20 @@ def Generator_HR(input_shape=(80, 80, 3)):
     global_skip = encoder_out
 
     # služi kot vhod in izhod ResNet-a.
-    resnet_skip = layers.Conv2D(filters=64, kernel_size=5, padding="same")(encoder_out)
+    x = layers.Conv2D(filters=64, kernel_size=5, padding="same")(encoder_out)
 
     for _ in range(5):
-        block_in = resnet_skip
-        x = layers.PReLU(shared_axes=[1, 2])(block_in)
+        block_skip = x
+        x = layers.PReLU(shared_axes=[1, 2])(block_skip)
         x = layers.Conv2D(filters=64, kernel_size=3, strides=1, padding="same", use_bias=False)(x)
+        x = layers.GroupNormalization(groups=-1, axis=-1)(x)  # -1 za InstanceNormalization
+
         x = layers.PReLU(shared_axes=[1, 2])(x)
         x = layers.Conv2D(filters=64, kernel_size=3, strides=1, padding="same", use_bias=False)(x)
-        resnet_skip = layers.Add()([block_in, x])
+        x = layers.GroupNormalization(groups=-1, axis=-1)(x)
+        x = layers.Add()([block_skip, x])
 
-    decoder_out = layers.Conv2D(filters=64, kernel_size=5, strides=1, padding="same")(resnet_skip)
+    decoder_out = layers.Conv2D(filters=64, kernel_size=5, strides=1, padding="same")(x)
     decoder_out = layers.Conv2D(filters=64, kernel_size=5, strides=1, padding="same")(decoder_out)
 
     subtracted = layers.Subtract()([global_skip, decoder_out])
@@ -53,7 +55,7 @@ def Generator_HR(input_shape=(80, 80, 3)):
     return Model(inputs=lr_input, outputs=model_out, name="G_HR")
 
 
-def Discriminator_HR(input_shape=(320, 320, 3)):
+def Discriminator_HR(input_shape=HR_SHAPE):
     """ Diskriminator za HR (high resolution) slike.
 
     Sprejme HR sliko (pravo ali lažno) in vrne verjetnost,
@@ -70,7 +72,7 @@ def Discriminator_HR(input_shape=(320, 320, 3)):
     Args:
         input_shape: dimenzija HR slike (width, height, channels)
     Returns:
-        float verjetnost
+        float logit vrednost
     """
     hr_input = layers.Input(shape=input_shape)
     x = layers.Conv2D(filters=64, kernel_size=3, strides=1, padding="valid")(hr_input)
@@ -79,10 +81,10 @@ def Discriminator_HR(input_shape=(320, 320, 3)):
     KERNEL_SIZE = (4, 3)
     STRIDES = (2, 1)
     FILTERS = (
-        1 * (64),
-        2 * (128),
-        2 * (256),
-        4 * (512)
+        64,
+        128, 128,
+        256, 256,
+        512, 512, 512, 512
     )
 
     for i in range(9):
@@ -91,7 +93,7 @@ def Discriminator_HR(input_shape=(320, 320, 3)):
 
         x = layers.Conv2D(filters=FILTERS[i], kernel_size=kernel_size, strides=strides, padding="valid")(x)
         # TODO: Spectral Normalization?
-        x = layers.GroupNormalization(groups=-1, axis=-1)(x)  # -1 za InstanceNormalization in zadnjo dimenzijo (kanali)
+        x = layers.GroupNormalization(groups=-1, axis=-1)(x)
         x = layers.LeakyReLU()(x)
 
     x = layers.Flatten()(x)
@@ -100,3 +102,85 @@ def Discriminator_HR(input_shape=(320, 320, 3)):
     model_out = layers.Dense(units=1)(x)
 
     return Model(inputs=hr_input, outputs=model_out, name="D_HR")
+
+
+def Generator_LR(input_shape=HR_SHAPE):
+    """ Generator za LR (low resolution) slike.
+
+    Sprejme sliko visoke ločljivosti in vrne degradirano sliko nizke ločljivosti. Arhitektura temelji
+    na G3 generatorju iz CinCGAN strukture, ki opravi downsampling s pomočjo konvolucije.
+    Ima 3 glavne dele:
+
+    1. Glava - downsampling in ekstrakcija značilnosti
+    2. ResidualNet - predela izdelan zemljevid značilnosti (feature map)
+    3. Rep - transformacija nazaj v sliko s tremi kanali
+
+    Args:
+        input_shape: dimenzija HR slike (width, height, channels)
+    Returns:
+        HR slika dimenzije (320, 320, 3)
+    """
+    hr_input = layers.Input(shape=input_shape)
+
+    x = layers.Conv2D(filters=64, kernel_size=7, padding="same")(hr_input)
+    x = layers.GroupNormalization(groups=-1, axis=-1)(x)
+    x = layers.LeakyReLU(negative_slope=0.2)(x)
+
+    for _ in range(2):  # downsample
+        x = layers.Conv2D(filters=64, kernel_size=3, strides=2, padding="same")(x)
+        x = layers.GroupNormalization(groups=-1, axis=-1)(x)
+        x = layers.LeakyReLU(negative_slope=0.2)(x)
+
+    for _ in range(6): # ResNet
+        block_skip = x
+        x = layers.Conv2D(filters=64, kernel_size=3, padding="same")(x)
+        x = layers.GroupNormalization(groups=-1, axis=-1)(x)
+        x = layers.LeakyReLU(negative_slope=0.2)(x)
+
+        x = layers.Conv2D(filters=64, kernel_size=3, padding="same")(x)
+        x = layers.GroupNormalization(groups=-1, axis=-1)(x)
+        x = layers.Add()([block_skip, x])
+        x = layers.LeakyReLU(negative_slope=0.2)(x)
+
+    for _ in range(2):
+        x = layers.Conv2D(filters=64, kernel_size=3, padding="same")(x)
+        x = layers.GroupNormalization(groups=-1, axis=-1)(x)
+        x = layers.LeakyReLU(negative_slope=0.2)(x)
+
+    x = layers.Conv2D(filters=3, kernel_size=7, padding="same")(x)
+    model_out = layers.ReLU(max_value=255)(x)  # vrednosti spravi na interval [0,255]
+
+    return Model(inputs=hr_input, outputs=model_out, name="G_LR")
+
+
+def Discriminator_LR(input_shape=LR_SHAPE):
+    """ Diskriminator za LR (low resolution) slike.
+
+    Arhitektura temelji PatchGAN diskriminatorju, kot opisujejo v članku o SRResCycGAN, ki vrne matriko
+    ocen verjetnosti (logitov) namesto ene same vrednosti. Tak pristop spodbuja generator, da se osredotoči
+    na ustvarjanje realističnih lokalnih podrobnosti. Namesto BatchNormalization je uporabljena
+    InstanceNormalization, saj se obnese boljše med treniranjem.
+
+    Args:
+        input_shape: dimenzija LR slike (width, height, channels)
+    Returns:
+        matrika logitov oblike (20, 20, 1)
+    """
+    lr_input = layers.Input(shape=input_shape)
+    KERNEL_SIZE = 5
+
+    x = layers.Conv2D(filters=64, kernel_size=KERNEL_SIZE, strides=2, padding="same")(lr_input)
+    x = layers.GroupNormalization(groups=-1, axis=-1)(x)
+    x = layers.LeakyReLU()(x)
+
+    x = layers.Conv2D(filters=128, kernel_size=KERNEL_SIZE, strides=2, padding="same")(x)
+    x = layers.GroupNormalization(groups=-1, axis=-1)(x)
+    x = layers.LeakyReLU()(x)
+
+    x = layers.Conv2D(filters=256, kernel_size=KERNEL_SIZE, padding="same")(x)
+    x = layers.GroupNormalization(groups=-1, axis=-1)(x)
+    x = layers.LeakyReLU()(x)
+
+    model_out = layers.Conv2D(filters=1, kernel_size=KERNEL_SIZE, padding="same")(x)
+
+    return Model(inputs=lr_input, outputs=model_out, name="D_LR")
