@@ -38,7 +38,12 @@ class SRResCycGAN(Model):
 
 
     def train_step(self, data):
-        real_lr, real_hr = data  # resnične slike
+        real_lr, real_hr = data  # (BATCH_SIZE, 1, 320, 320)
+
+        # TODO: preprocesiranje slik here:
+        # ...
+        # G_HR sprejme (80, 80, 3), bicubic downsampling here
+        # G_LR sprejme (320, 320, 3), this is fine
 
         with GradientTape(persistent=True) as disc_tape:
             # generira slike

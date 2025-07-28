@@ -1,73 +1,78 @@
+from typing import Generator
 import tensorflow as tf
-from fastmri.data import transforms
+import keras
+import numpy as np
 import h5py
 import os
 
-# AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-# AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-# AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-# AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-# AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-# AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-# AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-# AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-# AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-# AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-# AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-# AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-# AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-# AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-# AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-# AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-
-def get_mri_image(kspace):
-    pass
+BATCH_SIZE = 16
+BUFFER_SIZE = 1000
+BLOCK_LENGTH = 100
 
 
-def process_file(fpath):
-    # te se morajo iz vseh datotek združit
-    # input je ime datoteke
-    # iz datoteke dobim dva seta 36 slik
-    # vsak nabor dodam v svojo množico
-    # vrnem vse nabrane slike iz vseh datotek glede na začetni dataset (train/val/test)
-    file = h5py.File(fpath)
-    reconstructed = file["reconstruction_rss"]  # (36, 320, 320)
-    kspace        = file["kspace"]              # (36, 640, 372)
-    pass
+def kspace_transform(kspace_data) -> np.ndarray:
+    """
+    k-space podatke transformira v LR slike dimenzije 320x320
+    """
+    x = tf.signal.ifft2d(kspace_data)
+    x = tf.raw_ops.ComplexAbs(x=x)
+    x = keras.layers.CenterCrop(height=320, width=320, data_format="channels_first")(x)
+    x = np.array(x)
+    return x
 
 
-def preprocess_images(data_dir):
-    # dva tensorja za nabrane slike
-    lr_images = tf.random.normal(shape=[36, 320, 320], mean=1, stddev=1)
-    hr_images = tf.random.normal(shape=[36, 320, 320], mean=3, stddev=1)
-    return lr_images, hr_images
+def h5_generator(filepath) -> Generator[tuple[np.ndarray, np.ndarray], None, None]:
+    """
+    Generator, ki vrača (lr, hr) pare slik iz H5 datoteke.
+    """
+    with h5py.File(filepath, "r") as hf:
+        hr_images = np.array(hf["reconstruction_rss"])
+        lr_images = np.array(hf["kspace"])
+        lr_transformed = kspace_transform(lr_images)
+
+        assert hr_images.shape == lr_transformed.shape
+
+        for i in range(lr_transformed.shape[0]):
+            # doda channels dimenzijo obema 320x320 tensorjema => (1, 320, 320)
+            lr_out = np.expand_dims(lr_transformed[i], axis=0)
+            hr_out = np.expand_dims(hr_images[i], axis=0)
+            yield lr_out, hr_out
 
 
-def create_dataset(data_dir, batch_size=16):
-    path = os.path.join(data_dir, "*.h5")
-    lr_images, hr_images = preprocess_images(path)
+def create_paired_dataset(data_dir) -> tf.data.Dataset:
+    """
+    Ustvari `tf.data.Dataset` s parnimi podatki LR in HR slik. LR slike predstavljajo
+    transformirani k-space podatki, HR pa rekonstruirane in prečiščene slike dostopne znotraj
+    H5 datoteke pod imenom `reconstruction_rss`.
+    """
+    filepaths_pattern = os.path.join(data_dir, "*.h5")
 
-    # dobi imena vseh datotek iz dataseta (train/test/val)
-    dataset = tf.data.Dataset.list_files(file_pattern=path)
+    # `from_generator` pričakuje signiature izhodnih podatkov
+    # vsak `yield` bo vrnil dve sliki, LR in HR, obe obliki 1x320x320
+    lr_shape = tf.TensorShape([1, 320, 320])
+    hr_shape = tf.TensorShape([1, 320, 320])
+    out_sig = (
+        tf.TensorSpec(shape=lr_shape, dtype=tf.float32),
+        tf.TensorSpec(shape=hr_shape, dtype=tf.float32)
+    )
 
-    # s preprocess_image se namesto imen datotek shranijo pari (lr_image, hr_image)
-    dataset = dataset.map(preprocess_images, num_parallel_calls=tf.data.AUTOTUNE)
-    dataset = dataset.batch(batch_size)
-    dataset = dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
+    # dataset z imeni vseh datotek
+    filepaths_dataset = tf.data.Dataset.list_files(filepaths_pattern, shuffle=False)
 
-    return dataset
+    # s pomočjo generatorja odpre vsako datoteko posebej in postopoma z `yield` vrača pare slik
+    paired_dataset = filepaths_dataset.interleave(
+        lambda filepath: tf.data.Dataset.from_generator(
+            generator=h5_generator,
+            output_signature=out_sig,
+            args=(filepath,)
+        ),
+        cycle_length=tf.data.AUTOTUNE,       # število vhodnih elementov, ki se procesirajo istočasno
+        block_length=BLOCK_LENGTH,           # da zajame vse slike v datoteki, ker ni fiksnega števila slojev
+        num_parallel_calls=tf.data.AUTOTUNE  # za hitrejše procesiranje
+    )
 
+    paired_dataset = paired_dataset.shuffle(buffer_size=BUFFER_SIZE)
+    paired_dataset = paired_dataset.batch(BATCH_SIZE)
+    paired_dataset = paired_dataset.prefetch(tf.data.AUTOTUNE)
 
-
-train_dir = "../data/fastmri/singlecoil_train"
-path = os.path.join(train_dir, "*.h5")
-lr_images, hr_images = preprocess_images(path)
-lr_images[0, :3, :3]
-hr_images[0, :3, :3]
-
-
-
-dataset = create_dataset(train_dir)
-
-for f in dataset.take(1):  # 1 batch
-    print(f)
+    return paired_dataset
