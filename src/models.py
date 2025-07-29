@@ -1,5 +1,5 @@
 from keras import Model, layers
-from .utils import LR_SHAPE, HR_SHAPE
+from utils import LR_SHAPE, HR_SHAPE
 
 
 def Generator_HR(input_shape=LR_SHAPE):

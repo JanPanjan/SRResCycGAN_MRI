@@ -1,12 +1,11 @@
-from src.utils import adam_opt
-from src.data_loader import create_paired_dataset
-from src.SRResCycGAN import SRResCycGAN
-from src.losses import losses_dict
+from utils import adam_opt
+from data_loader import create_paired_dataset
+from SRResCycGAN import SRResCycGAN
+from losses import losses_dict
 
 EPOCHS = 10
-# TRAIN_PATH = "data/fastmri/singlecoil_train"
-TRAIN_PATH = "experimenting"
-VAL_PATH =  "data/fastmri/singlecoil_val"
+TRAIN_PATH = "data/fastmri/train_sample"
+VAL_PATH = "data/fastmri/val_sample"
 
 
 if __name__ == "main":

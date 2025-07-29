@@ -1,5 +1,5 @@
-from .models import Generator_HR, Generator_LR, Discriminator_HR, Discriminator_LR
-from .utils import LR_SHAPE, HR_SHAPE
+from models import Generator_HR, Generator_LR, Discriminator_HR, Discriminator_LR
+from utils import LR_SHAPE, HR_SHAPE
 from keras import Model, Loss, Optimizer
 from tensorflow import GradientTape, ones_like, zeros_like, image
 

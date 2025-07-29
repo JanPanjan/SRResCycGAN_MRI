@@ -1,4 +1,4 @@
-from .utils import LR_SHAPE, HR_SHAPE
+from utils import LR_SHAPE, HR_SHAPE
 from typing import Generator
 import tensorflow as tf
 import keras

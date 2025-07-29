@@ -1,4 +1,4 @@
-from src.utils import HR_SHAPE
+from utils import HR_SHAPE
 from tensorflow import image, reduce_mean, abs
 from keras import Loss, Model
 from keras.losses import MeanSquaredError, BinaryCrossentropy, MeanAbsoluteError
