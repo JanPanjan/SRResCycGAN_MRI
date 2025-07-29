@@ -1,10 +1,13 @@
 from .models import Generator_HR, Generator_LR, Discriminator_HR, Discriminator_LR
 from .utils import LR_SHAPE, HR_SHAPE
 from keras import Model, Loss, Optimizer
-from tensorflow import GradientTape, ones_like, zeros_like
+from tensorflow import GradientTape, ones_like, zeros_like, image
 
 
 class SRResCycGAN(Model):
+    """
+    Super Resolution Residual Cyclic GAN
+    """
     def __init__(self, lambda_cyc=10.0, lambda_content=5.0) -> None:
         super(SRResCycGAN, self).__init__()
 
@@ -38,12 +41,7 @@ class SRResCycGAN(Model):
 
 
     def train_step(self, data):
-        real_lr, real_hr = data  # (BATCH_SIZE, 1, 320, 320)
-
-        # TODO: preprocesiranje slik here:
-        # ...
-        # G_HR sprejme (80, 80, 3), bicubic downsampling here
-        # G_LR sprejme (320, 320, 3), this is fine
+        real_lr, real_hr = data
 
         with GradientTape(persistent=True) as disc_tape:
             # generira slike
