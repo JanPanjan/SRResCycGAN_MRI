@@ -6,76 +6,66 @@ import numpy as np
 import h5py
 import os
 
-BATCH_SIZE = 16
+
+BATCH_SIZE = 8
 BUFFER_SIZE = 1000
 BLOCK_LENGTH = 1
 
 
-def kspace_transform(kspace_data) -> keras.KerasTensor:
+def h5_generator(filepath) -> Generator[tuple[np.ndarray, np.ndarray], None, None]:
     """
-    k-space podatke transformira v LR sliko dimenzije 320x320
+    Generator, ki vrača (lr, hr) pare slik iz H5 datotek z uporabo NumPy. Dimenzije HR slike so najprej
+    prilagojene iz (320, 320) na (320, 320, 3). LR slike so pridobljene z bicubic downsampling HR slik.
     """
-    x = tf.signal.ifft2d(kspace_data)
-    x = tf.raw_ops.ComplexAbs(x=x)
-    x = keras.layers.CenterCrop(height=320, width=320, data_format="channels_last")(x)
-    return x
+    with h5py.File(filepath.decode('utf-8'), "r") as hf:
+        hr_images_raw = np.array(hf["reconstruction_rss"])
 
-
-def h5_generator(filepath) -> Generator[tuple[tf.Tensor, tf.Tensor], None, None]:
-    """
-    Generator, ki vrača (lr, hr) pare slik iz H5 datotek.
-    """
-    with h5py.File(filepath, "r") as hf:
-        hr_images = np.array(hf["reconstruction_rss"])
-        lr_images = np.array(hf["kspace"])
-
-        # poskrbi da so parni podatki, tudi če nimata kspace in rss enakega števila sliceov
-        channels = hr_images.shape[0] if hr_images.shape[0] > lr_images.shape[0] else lr_images.shape[0]
+        channels = hr_images_raw.shape[0]
 
         for i in range(channels):
-            # vsaki sliki doda channels dimenzijo: (H, W) => (H, W, 1)
-            lr_image = tf.constant(np.expand_dims(lr_images[i], axis=-1))
-            hr_image = tf.constant(np.expand_dims(hr_images[i], axis=-1))
-            assert lr_image.shape[2] == 1
-            assert hr_image.shape[2] == 1
+            hr_image = hr_images_raw[i].astype(np.float32)
 
-            # transformira kspace podatke v sliko
-            lr_transformed = kspace_transform(lr_image)
-            # opravi bicubic downsampling, kot omenjajo v članku
-            lr_transformed = tf.image.resize(images=lr_transformed, size=(80, 80), method=tf.image.ResizeMethod.BICUBIC)
-            assert lr_transformed.shape == (80, 80, 1)
+            # zagotovi da je slika vsaj 3D (doda chanels dimenzijo, če manjka)
+            if hr_image.ndim == 2:
+                hr_image = np.expand_dims(hr_image, axis=-1) # (320, 320) -> (320, 320, 1)
 
-            # poskrbi da ima tudi HR pravo dimenzijo
-            if hr_image.shape != (320, 320, 1):
-                hr_image = tf.image.resize(images=hr_image, size=(320, 320), method=tf.image.ResizeMethod.BICUBIC)
+            # če ima slika 2 kanala, vzamemo samo prvega (morda lahko ostranim)
+            if hr_image.shape[-1] == 2:
+                hr_image = hr_image[..., 0:1] # (320, 320, 2) -> (320, 320, 1)
 
-            assert hr_image.shape == (320, 320, 1)
+            # zagotovi da ima 3 kanale (nisem prepričan ali je to pravi pristop)
+            # np.tile ponovi array po določeni osi.
+            if hr_image.shape[-1] == 1:
+                hr_image = np.tile(hr_image, (1, 1, 3)) # (320, 320, 1) -> (320, 320, 3)
 
-            # pretvori v rgb s 3 kanali: (H, W, 1) => (H, W, 3)
-            lr_image = tf.image.grayscale_to_rgb(lr_transformed)
-            hr_image = tf.image.grayscale_to_rgb(hr_image)
-            assert lr_image.shape == (80, 80, 3)
-            assert hr_image.shape == (320, 320, 3)
+            assert hr_image.shape == HR_SHAPE
 
-            yield lr_image, hr_image
+            # ustvari LR sliko z downsampling-om
+            hr_image_tensor = tf.constant(hr_image)
+            lr_image = tf.image.resize(hr_image_tensor, LR_SHAPE[:2], method=tf.image.ResizeMethod.BICUBIC)
+
+            yield lr_image.numpy(), hr_image
 
 
-def create_paired_dataset(data_dir) -> tf.data.Dataset:
+def create_paired_dataset(filepath: list[str] | str) -> tf.data.Dataset:
     """
-    Ustvari `tf.data.Dataset` s parnimi podatki LR in HR slik. LR slike predstavljajo transformirani k-space
-    podatki, HR pa rekonstruirane in prečiščene slike dostopne znotraj datotek pod `reconstruction_rss`.
+    Ustvari `tf.data.Dataset` s parnimi podatki LR in HR slik.
     """
-    filepaths_pattern = os.path.join(data_dir, "*.h5")
-
     # `from_generator` spodaj pričakuje signiature izhodnih podatkov
     # vsak `yield` bo vrnil dve sliki, LR in HR, primernih oblik
     out_sig = (
-        tf.TensorSpec(shape=tf.TensorShape(LR_SHAPE), dtype=tf.float32),
-        tf.TensorSpec(shape=tf.TensorShape(HR_SHAPE), dtype=tf.float32)
+        tf.TensorSpec(shape=LR_SHAPE, dtype=tf.float32),
+        tf.TensorSpec(shape=HR_SHAPE, dtype=tf.float32)
     )
 
-    # dataset z imeni vseh datotek
-    filepaths_dataset = tf.data.Dataset.list_files(filepaths_pattern, shuffle=False)
+    # naredi dataset z imeni vseh datotek
+    if isinstance(filepath, str):
+        print("Creating paired dataset from", filepath)
+        filepaths_pattern = os.path.join(filepath, "*.h5")
+        filepaths_dataset = tf.data.Dataset.list_files(filepaths_pattern, shuffle=False)
+    else:
+        print("Creating paired dataset from", filepath[0].rsplit("/")[4])
+        filepaths_dataset = tf.data.Dataset.from_tensor_slices(filepath)
 
     # z generatorjem odpre vsako datoteko posebej in postopoma z `yield` vrača pare slik
     paired_dataset = filepaths_dataset.interleave(
@@ -91,13 +81,6 @@ def create_paired_dataset(data_dir) -> tf.data.Dataset:
 
     paired_dataset = paired_dataset.shuffle(buffer_size=BUFFER_SIZE)
     paired_dataset = paired_dataset.batch(BATCH_SIZE)
-    paired_dataset = paired_dataset.prefetch(tf.data.AUTOTUNE)
+    paired_dataset = paired_dataset.prefetch(tf.data.AUTOTUNE)  # za hitrejše nalaganje
 
     return paired_dataset
-
-
-if __name__ == "__main__":
-    print("Testiram delovanje `create_paired_dataset`")
-    data_dir = "experimenting"
-    dataset = create_paired_dataset(data_dir)
-    print(dataset.take(1).element_spec)

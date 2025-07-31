@@ -31,18 +31,18 @@ class PerceptualLoss(Loss):
 
     Vrne MSE (L2 loss) nad izhodom VGG19 za resnično in generirano sliko.
     """
+
     def __init__(self, hr_shape=HR_SHAPE) -> None:
         super(PerceptualLoss, self).__init__(name="perceptual_loss")
         self.vgg_model = self.__build_vgg_model(hr_shape)
         self.L2 = MeanSquaredError()
 
-
     def __build_vgg_model(self, hr_shape):
         vgg = VGG19(input_shape=hr_shape, include_top=False, weights="imagenet")
         vgg.trainable = False
-        output_layer = vgg.get_layer("block3_conv3").output  # Izhod enega od vmesnih slojev
+        # Izhod enega od vmesnih slojev
+        output_layer = vgg.get_layer("block3_conv3").output
         return Model(inputs=vgg.input, outputs=output_layer, name="vgg_perceptual")
-
 
     def call(self, y_true, y_pred):
         true_preproc = preprocess_input(y_true)
