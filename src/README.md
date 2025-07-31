@@ -137,3 +137,9 @@ adam_optimizer = keras.optimizers.Adam(learning_rate=lr_schedule, beta_1=0.9, be
 ```
 
 - NOTE: Trainable projection layer sem izpustil ker je prekompleksno za implementirat
+
+## Evaluation
+
+- PSNR
+- SSIR
+- ... idk
