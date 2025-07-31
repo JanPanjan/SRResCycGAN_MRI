@@ -1,6 +1,6 @@
 import numpy as np
 import fastmri
-from fastmri.data import SliceDataset, transforms  # for FastMRI data utilities
+from fastmri.data import transforms  # for FastMRI data utilities
 import h5py  # for h5 data
 import os
 import matplotlib.pyplot as plt
@@ -35,12 +35,4 @@ rss.dtype
 sample_slice_rss = rss[slice]
 plt.title(f"Reconstructed slice {slice}")
 plt.imshow(sample_slice_rss, cmap="gray")
-plt.show()
-
-esc: h5py.Dataset = sample.get("reconstruction_esc")
-esc.shape
-esc.dtype
-
-sample_slice_esc = esc[slice]
-plt.imshow(sample_slice_esc, cmap="gray")
 plt.show()
