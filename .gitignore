@@ -3,8 +3,11 @@
 .ropeproject
 uv.lock
 __pycache__
-data/*/**
 src-mnist
+data/fastmri
+data/mnist
+data/*csv
+data/*npz
 notes/*.md
 notes/*.txt
 src/.ipynb_checkpoints
