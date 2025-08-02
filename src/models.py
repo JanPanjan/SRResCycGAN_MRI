@@ -25,10 +25,10 @@ def Generator_HR(input_shape=LR_SHAPE):
 
     lr_input = layers.Input(shape=input_shape)
     encoder_out = layers.Conv2DTranspose(
-        filters=FILTERS,     # število kanalov izhoda; rgb slika ima 3, tu jih vrne 64)
-        kernel_size=5,  # dimenzije jedra, ki bo procesiral sliko (5x5)
-        strides=4,      # za koliko pikslov se premakne jedro (4 => 4x upsampling => vodi v 320x320), ko je padding="same"
-        padding="same"  # poskrbi, da se doda ravno prav ničel na robove, da je končna dimenzija odvisna od strides
+        filters=FILTERS,  # število kanalov izhoda; rgb slika ima 3, tu jih vrne 64)
+        kernel_size=5,    # dimenzije jedra, ki bo procesiral sliko (5x5)
+        strides=4,        # premik jedra (4 => 4x upsampling => 320)
+        padding="same"    # doda ravno prav ničel na robove, da je končna dimenzija odvisna od strides
     )(lr_input)
 
     global_skip = encoder_out

@@ -1,3 +1,13 @@
 .venv
+.zed
+.ropeproject
 uv.lock
+__pycache__
 data
+src-mnist
+notes/*.md
+notes/*.txt
+src/.ipynb_checkpoints
+src/__pycache__
+experimenting/.ipynb_checkpoints
+experimenting/__pycache__

@@ -1,4 +1,4 @@
-srrescycgan-paper:
+srrescycgan:
   type: article
   title: "Deep Cyclic Generative Adversarial Residual Convolutional Networks for Real Image Super-Resolution"
   date: 2020-09-07
@@ -7,3 +7,39 @@ srrescycgan-paper:
     - Micheloni, Christian
   serial:
     doi: "https://doi.org/10.48550/arXiv.2009.03693"
+
+sr-with-mri:
+  type: article
+  title: "Super-resolution of magnetic resonance images using Generative Adversarial Networks"
+  date: 2023-03-15
+  author:
+    - Guerreiro, João
+    - Tomás, Pedro
+    - Garcia, Nuno
+    - Aidos, Helena
+  serial:
+    doi: "https://doi.org/10.1016/j.compmedimag.2023.102280"
+
+cyclegan:
+  type: article
+  title: "Unpaired Image-to-Image Translation using Cycle-Consistent Adversarial Networks"
+  date: 2020-08-24
+  author:
+    - Zhu, Jun-Yan
+    - Park, Taesung
+    - Isola, Phillip
+    - Efros, Alexei A.
+  serial:
+    doi: "https://doi.org/10.48550/arXiv.1703.10593"
+
+resnet:
+  type: article
+  title: "Deep Residual Learning for Image Recognition"
+  date: 2015-12-10
+  author:
+    - He, Kaiming
+    - Zhang, Xiangyu
+    - Ren, Shaoqing
+    - Sun, Jian
+  serial:
+    doi: "https://doi.org/10.48550/arXiv.1512.03385"
