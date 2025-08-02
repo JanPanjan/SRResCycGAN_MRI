@@ -127,7 +127,7 @@ Pri tem problemu lahko pomagajo SR (super resolution) metode, ki so zmožne reko
 
 == O projektu
 
-Za ta projekt sem si zadal implementirati SRResCycGAN model v jeziku Python z uporabo knjižnice TensorFlow. Za vso programsko kodo je bila uporavljena različica 2.15. Programska koda je dostopna na #link("https://github.com/JanPanjan/SRResCycGAN_MRI")[github]. Model je bil treniran na #link("https://fastmri.med.nyu.edu/")[FastMRI] podatkih, specifično na t.i. _singlecoil_ slikah kolen.
+Za ta projekt sem si zadal implementirati SRResCycGAN model v jeziku Python z uporabo knjižnice TensorFlow. Za vso programsko kodo je bila uporavljena različica 2.15. Programska koda je dostopna na #link("https://github.com/JanPanjan/SRResCycGAN_MRI")[github] in na #link("https://colab.research.google.com/drive/15Wztc85dwmdJwXp0B03hag4qVt5m_LR1#scrollTo=2ALLw3xuGFiW")[Google Colab]. Model je bil treniran na #link("https://fastmri.med.nyu.edu/")[FastMRI] podatkih, specifično na t.i. _singlecoil_ (2D) slikah kolen. Omejil sem se na podmnožico train in test podatkov. Imena uporabljenih datotek so vidna #link("https://github.com/JanPanjan/SRResCycGAN_MRI/data")[tu].
 
 = Predstavitev GAN strutkure
 

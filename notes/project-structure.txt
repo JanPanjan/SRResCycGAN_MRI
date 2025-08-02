@@ -1,8 +1,0 @@
-GAN-osuprProject/
-├── data/              # Sem se bodo naložili podatki
-├── notebooks/         # Za eksperimentiranje in vizualizacijo (Jupyter)
-├── src/               # Glavna izvorna koda
-│   ├── models/        # Tukaj bodo definicije modelov (G, D)
-│   ├── data_loader.py # Koda za nalaganje in predprocesiranje
-│   └── utils.py       # Pomožne funkcije
-└── train.py           # Glavna skripta za treniranje
