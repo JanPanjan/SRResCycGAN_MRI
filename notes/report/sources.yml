@@ -8,6 +8,17 @@ srrescycgan:
   serial:
     doi: "https://doi.org/10.48550/arXiv.2009.03693"
 
+srrescgan:
+  type: article
+  title: "Deep Generative Adversarial Residual Convolutional Networks for Real-World Super-Resolution"
+  date: 2020-05-03
+  author:
+    - Muhammad Umer, Rao
+    - Micheloni, Christian
+    - Luca Foresti, Gian
+  serial:
+    doi: "https://doi.org/10.48550/arXiv.2005.00953"
+
 sr-with-mri:
   type: article
   title: "Super-resolution of magnetic resonance images using Generative Adversarial Networks"
@@ -43,3 +54,41 @@ resnet:
     - Sun, Jian
   serial:
     doi: "https://doi.org/10.48550/arXiv.1512.03385"
+
+preactivation:
+  type: web
+  title: Pre-activation in Neural Networks
+  author: Mortal, Meek
+  date: 2017-01-04
+  url: "https://learningstracker.wordpress.com/2017/01/04/pre-activation-in-neural-networks/"
+
+instance-norm:
+  type: article
+  title: "Instance Normalization: The Missing Ingredient for Fast Stylization"
+  date: 2017-11-06
+  author:
+    - Ulyanov, Dmitry
+    - Vedaldi, Andrea
+    - Lempitsky, Victor
+  doi:
+    serial: "https://doi.org/10.48550/arXiv.1607.08022"
+
+logit:
+  type: web
+  title: Logit
+  url: "https://en.wikipedia.org/wiki/Logit"
+
+patch-gan:
+  type: article
+  title: "Patch-Based Image Inpainting with Generative Adversarial Networks"
+  author:
+    - Demir, Ugur
+    - Unal, Gozde
+  serial:
+    doi: "https://doi.org/10.48550/arXiv.1803.07422"
+
+kspace:
+  type: web
+  title: "What is k-space?"
+  author: Elster, Allen D
+  url: "https://mriquestions.com/what-is-k-space.html"

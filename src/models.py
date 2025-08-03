@@ -31,10 +31,10 @@ def Generator_HR(input_shape=LR_SHAPE):
         padding="same"    # doda ravno prav ničel na robove, da je končna dimenzija odvisna od strides
     )(lr_input)
 
-    global_skip = encoder_out
-
     # služi kot vhod in izhod ResNet-a.
     x = layers.Conv2D(filters=FILTERS, kernel_size=5, padding="same")(encoder_out)
+
+    global_skip = encoder_out
 
     for _ in range(5):
         block_skip = x
